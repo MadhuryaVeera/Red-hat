@@ -1,0 +1,183 @@
+#-->root
+$-->user
+//-->comment for my clarification
+VM1-->serverb-->Node1
+VM2-->servera-->Node2
+------------------------
+open serverb in redhat lab environment then give user name as root and password as redhat
+in exam if they mention any new username or password use those instead of these
+
+setting hostname for serverb
+------------------------------------
+//setting hostname is done only in root
+#hostnamectl set-hostname servername
+//to see the hostname
+#hostname
+
+setting the ip address
+------------------------
+//to see the connection name 
+#nmcli connection show
+//to modify the ip address
+#nmcli connection modify "Wired connection 1" ipv4.addresses 172.25.250.11/24 ipv4.gateway 172.25.250.254 ipv4.dns 172.25.250.254   ipv4.method static
+//here "Wired connection 1" is the name of the connection which will come after executing the nmcli connection show
+//to make the connection up
+#nmcli connection up "Wired connection 1"
+//to check the ip address is correct or not
+#ping 172.25.250.11(ip address)
+//to check the gateway/netmark
+#ping 172.25.250.254(gateway adddress)
+
+//we can continue to do this continuation commands in workstation and then go to serverb by usinf ssh root@serverb username and password are student or we can do in serverb
+
+Creating a repository
+------------------------------
+creatinf an empty repo file with madhu.repo as name
+#vi /etc/yum.repos.d/madhu.repo
+//after executing this command we will get an empty VM file press i for insert or writing 
+[123]
+name=appstream
+baseurl=http://content/rhel9.0/x86_64/dvd/AppStream
+gpgcheck=0
+enabled=1
+[456]
+name=baseos
+baseurl=http://content/rhel9.0/x86_64/dvd/BaseOS
+gpgcheck=0
+enabled=1
+//press escape and write :wq! to save the file
+#dnf clean all
+//to check the repos
+#dnf repolist
+//to check the links are correct or not
+#vi install vim -y
+//or
+#dnf install vim
+//to remove the repository
+#rm -rf /etc/yum.repos.d/madhu.repo
+
+
+configure selinux
+-----------------------------
+//we will get all the http port types
+#semanage port -l |grep http
+//to add 82 port number for the name of port as http_port_t of type tcp
+//the name of port will come after executing semanage port -l |grep http
+#semanage port -a -t http_port_t -p tcp 82 
+//again using first command we can verify
+#semanage port -l |grep http
+//until now we added port number 82 to access if firewall will block it in order to overcome that we will make permanent by using below //command
+#firewall-cmd --premanent --add-port=82/tcp
+//installing httpd 
+#yum install httpd -y
+//to start the service
+#systemctl start httpd.service
+//to check the status
+#systemctl status httpd.service
+#to enablethe status
+#systemctl enable httpd.service
+#vim /etc/httpd/conf/httpd.conf
+//we will get an vi page then insert and write
+<virtualhost 172.25.250.11:82>
+servername serverb.lab.example.com
+documentroot /var/www/html
+</virtualhost>
+//to check whether it is correct or not
+#httpd -t
+//to save all the updates
+#systemctl restart httpd.service
+
+Create the following users, groups and group memberships:
+----------------------------------------------------------------
+//A group named admin.
+#groupadd admin
+//to check
+#cat/etc/group
+#cat /etc/passwd
+//A user harry who belongs to admin as a secondary group.
+#useradd -G admin harry
+//A user natasha who belongs to admin as a secondary group
+#useradd -G admin natasha
+//A user sarah who does not have access to an interactive shell on the system and who is not member of admin.
+#useradd -s /sbin/nologin sarah
+//The users harry,natasha,sarah should all have password of password.
+#passwd harry
+#passwd natasha
+#passwd sarah
+//to check password
+#cat /etc/shadow
+
+ Create a collaborative directory /common/admin with the following characterstics:
+-------------------------------------------------------------------------------------
+
+
+#mkdir -p /commom/admin
+#ls -ld /commom/admin
+#chgrp admin /common/admin
+#ls -ld /commom/admin
+#chmod 770 /common/admin
+#ls -ld /commom/admin
+#cd /common/admin
+#touch file1
+#ls -l
+#chmod g+s /common/admin
+#su - harry
+#cd /common/admin
+#touch file2
+#ls -l
+
+
+Building of containers
+---------------------------
+//in workstation in lab environment type the command
+$lab start containers-services(----just to practice no need in exam)
+$ssh student@servera
+$wget (link of the container)  just for practice not in exam
+//to check container file is there or not
+$ls
+$podman login registry.lab.example.com
+//then it will ask username and password
+Username:
+Password:redhat321
+13)1)
+//for creating image file
+$podman build -t monitor .
+//to check if container images are build or not
+$podman images
+//exit from student user and go to root user
+$exit 
+$ssh root@servera
+#mkdir /opt/files /opt/processed
+#chmod 777 /opt/files /opt/processed/
+#ls -ld /opt/files 
+//to change user and admin from root to student
+#chown student:student /opt/file /opt/processed/
+#ls -ld /opt/files
+//switch again to student user
+#ssh student@servera
+#podman images  (local/monitor-->output)
+#podman ps   (
+$podman run -d --name ascii2pdf -v /opt/files:/opt/incoming:Z -v /opt/processed/:/opt/outcoming:Z localhost/monitor:latest
+//to see the containers
+$podman ps
+$mkdir -p ~/.config/systemd/user
+$cd ~/.config/systemd/user
+$podman generate systemd --name ascii2pdf --files --new
+$ls
+$podman stop ascii2pdf
+$podman ps
+$podman rm ascii2pdf
+$systemctl --user daemon-reload
+$podman ps
+$systemctl --user start container-ascii2pdf.service
+$podman ps
+$systemctl --user enable container-ascii2pdf.service
+$systemctl --user status coontainer-ascii2pdf.service
+ctrl+x
+$exit
+$ssh root@servera
+#loginctl enable-linger student
+#loginctl show-user student
+#
+
+ 
